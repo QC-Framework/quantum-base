@@ -6,15 +6,11 @@ CreateThread(function()
 	while true do
 		for k, v in pairs(COMPONENTS.Players) do
 			if not GetPlayerEndpoint(k) and not _dropping[k] then
-				local char = COMPONENTS.Fetch:CharacterSource(k)
-				if char ~= nil then
-					TriggerEvent("Characters:Server:PlayerDropped", k, char:GetData())
-				end
 				COMPONENTS.Middleware:TriggerEvent("playerDropped", k, "Time Out")
 				COMPONENTS.Players[k] = nil
 			end
 		end
-		Wait(60000)
+		Wait(10000)
 	end
 end)
 
@@ -22,21 +18,14 @@ AddEventHandler("Proxy:Shared:RegisterReady", function()
 	COMPONENTS.Middleware:Add("playerDropped", function(source, message)
 		local player = COMPONENTS.Players[source]
 		if player ~= nil then
-			local lastLocationMessage = ""
-			local lastCoords = COMPONENTS.Characters:GetLastLocation(source) or false
-			if lastCoords and type(lastCoords) == "vector3" then
-				lastLocationMessage = string.format(" [Coords: %s]", lastCoords)
-			end
-
 			COMPONENTS.Logger:Info(
 				"Base",
 				string.format(
-					"%s (%s) With Source %s Disconnected, Reason: %s%s",
+					"%s (%s) With Source %s Disconnected, Reason: %s",
 					player:GetData("Name"),
 					player:GetData("AccountID"),
 					source,
-					message,
-					lastLocationMessage
+					message
 				),
 				{
 					console = true,
@@ -52,23 +41,24 @@ AddEventHandler("Proxy:Shared:RegisterReady", function()
 	COMPONENTS.Middleware:Add("playerDropped", function(source, message)
 		local player = COMPONENTS.Players[source]
 		if player ~= nil then
-			local char = COMPONENTS.Fetch:CharacterSource(source)
+			local char = player:GetData("Character")
 
 			local pData = {
 				Source = source,
-				Groups = player:GetData("Groups"),
-				Name = player:GetData("Name"),
-				GameName = player:GetData("GameName"),
-				ID = player:GetData("ID"),
-				Discord = player:GetData("Discord"),
-				Mention = player:GetData("Mention"),
 				AccountID = player:GetData("AccountID"),
-				Avatar = player:GetData("Avatar"),
+				Name = player:GetData("Name"),
 				Identifier = player:GetData("Identifier"),
 				Level = player.Permissions:GetLevel(),
+				Groups = player:GetData("Groups"),
 				IsStaff = player.Permissions:IsStaff(),
 				IsAdmin = player.Permissions:IsAdmin(),
-				Character = player:GetData("Character"),
+				Character = (char ~= nil and {
+					First = char:GetData("First"),
+					Last = char:GetData("Last"),
+					SID = char:GetData("SID"),
+					DOB = char:GetData("DOB"),
+					Phone = char:GetData("Phone"),
+				} or false),
 				Reason = message,
 				DisconnectedTime = os.time(),
 			}
@@ -85,21 +75,10 @@ end)
 AddEventHandler("playerDropped", function(message)
 	local src = source
 	_dropping[src] = true
-
-	local char = COMPONENTS.Fetch:CharacterSource(src)
-	if char ~= nil then
-		TriggerEvent("Characters:Server:PlayerDropped", src, char:GetData())
-	end
-
 	COMPONENTS.Middleware:TriggerEvent("playerDropped", src, message)
 	COMPONENTS.Players[src] = nil
 	_dropping[src] = nil
-
-	if char ~= nil then
-		COMPONENTS.DataStore:DeleteStore(src, "Character")
-	end
-	COMPONENTS.DataStore:DeleteStore(src, "Player")
-	TriggerEvent("Characters:Server:DropCleanup", src)
+	collectgarbage()
 end)
 
 AddEventHandler("Core:Server:ForceUnload", function(source)
@@ -117,61 +96,38 @@ AddEventHandler("Queue:Server:SessionActive", function(source, data)
 		else
 			local pData = {
 				Source = source,
-				Groups = data.Groups,
-				Name = data.Name,
 				ID = data.ID,
-				Discord = data.Discord,
-				Mention = data.Mention,
 				AccountID = data.AccountID,
-				Avatar = data.Avatar,
+				Name = data.Name,
 				Identifier = data.Identifier,
-				--Tokens = COMPONENTS.Player:CheckTokens(source, data.ID, data.Tokens),
-				GameName = GetPlayerName(source),
+				Groups = data.Groups,
+				Tokens = COMPONENTS.Player:CheckTokens(source, data.ID, data.Tokens),
 			}
 
 			for k, v in pairs(COMPONENTS.Players) do
 				if v:GetData("AccountID") == pData.AccountID then
 					COMPONENTS.Players[k] = nil
-					COMPONENTS.Logger:Error(
-						"Base",
-						string.format("%s Connected But Was Already Registered As A Player, Clearing", pData.AccountID)
-					)
+					COMPONENTS.Logger:Error("Base", string.format("%s Connected But Was Already Registered As A Player, Clearing", pData.AccountID))
 					if v:GetData("Source") ~= nil then
-						DropPlayer(
-							v:GetData("Source"),
-							"You've Been Dropped Because Your Account Has Rejoined The Server. Using your account on multiple PCs to connect multiple times is not allowed."
-						)
+						DropPlayer(v:GetData("Source"), "You've Been Dropped Because Your Account Has Rejoined The Server. Using your account on multiple PCs to connect multiple times is not allowed.")
 					end
 				end
 			end
 
 			COMPONENTS.Players[source] = PlayerClass(source, pData)
 			COMPONENTS.Routing:RoutePlayerToHiddenRoute(source)
-			COMPONENTS.Logger:Info(
-				"Base",
-				string.format(
-					"%s (%s) Connected With Source %s",
-					COMPONENTS.Players[source]:GetData("Name"),
-					COMPONENTS.Players[source]:GetData("AccountID"),
-					source
-				),
-				{
-					console = true,
-					discord = {
-						embed = true,
-						type = "info",
-						webhook = GetConvar("discord_connection_webhook", ""),
-					},
+			COMPONENTS.Logger:Info("Base", string.format("%s (%s) Connected With Source %s", COMPONENTS.Players[source]:GetData("Name"), COMPONENTS.Players[source]:GetData("AccountID"), source), {
+				console = true,
+				discord = {
+					embed = true,
+					type = 'info',
+					webhook = GetConvar('discord_connection_webhook', ''),
 				}
-			)
+			})
 
 			TriggerClientEvent("Player:Client:SetData", source, COMPONENTS.Players[source]:GetData())
 
-			Player(source).state.isStaff = COMPONENTS.Players[source].Permissions:IsStaff()
-			Player(source).state.isAdmin = COMPONENTS.Players[source].Permissions:IsAdmin()
 			Player(source).state.isDev = COMPONENTS.Players[source].Permissions:GetLevel() >= 100
-
-			TriggerEvent("Player:Server:Connected", source)
 		end
 	end)
 end)
@@ -197,9 +153,9 @@ COMPONENTS.Player = {
 				table.insert(existing, k)
 			end
 			COMPONENTS.Database.Auth:updateOne({
-				collection = "tokens",
+				collection = "users",
 				query = {
-					account = accountId,
+					_id = accountId,
 				},
 				update = {
 					["$set"] = {
@@ -216,17 +172,14 @@ COMPONENTS.Player = {
 			end
 
 			COMPONENTS.Database.Auth:updateOne({
-				collection = "tokens",
+				collection = "users",
 				query = {
-					account = accountId,
+					_id = accountId,
 				},
 				update = {
 					["$set"] = {
 						tokens = tkns,
 					},
-				},
-				options = {
-					upsert = true,
 				},
 			}, function()
 				p:resolve(tkns)
@@ -246,10 +199,7 @@ function PlayerClass(source, data)
 				if
 					COMPONENTS.Config.Groups[v] ~= nil
 					and type(COMPONENTS.Config.Groups[v].Permission) == "table"
-					and (
-						COMPONENTS.Config.Groups[v].Permission.Group == "staff"
-						or COMPONENTS.Config.Groups[v].Permission.Group == "admin"
-					)
+					and (COMPONENTS.Config.Groups[v].Permission.Group == "staff" or COMPONENTS.Config.Groups[v].Permission.Group == "admin")
 				then
 					return true
 				end
@@ -285,7 +235,7 @@ function PlayerClass(source, data)
 		end,
 	}
 
-	local license = GetPlayerLicense(source)
+	local steam = GetPlayerSteam(source) -- Because the Identifier is Stored in Decimal (When you need hex)
 	for k, v in ipairs(_data:GetData("Groups")) do
 		if
 			COMPONENTS.Config.Groups[tostring(v)] ~= nil
@@ -293,8 +243,8 @@ function PlayerClass(source, data)
 			and COMPONENTS.Config.Groups[tostring(v)].Permission.Group
 		then
 			ExecuteCommand(
-				("add_principal identifier.license:%s group.%s"):format(
-					license,
+				("add_principal identifier.steam:%s group.%s"):format(
+					steam,
 					COMPONENTS.Config.Groups[tostring(v)].Permission.Group
 				)
 			)
@@ -304,11 +254,12 @@ function PlayerClass(source, data)
 	return _data
 end
 
-function GetPlayerLicense(source)
+function GetPlayerSteam(source)
 	for _, id in ipairs(GetPlayerIdentifiers(source)) do
-		if string.sub(id, 1, string.len("license:")) == "license:" then
-			local license = string.sub(id, string.len("license:") + 1)
-			return license
+		if string.sub(id, 1, string.len("steam:")) == "steam:" then
+			local steamHex = string.sub(id, string.len("steam:") + 1)
+			return steamHex
 		end
 	end
+	return false
 end

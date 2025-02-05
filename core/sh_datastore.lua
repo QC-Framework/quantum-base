@@ -1,10 +1,5 @@
 local _stores = {}
 
-local _blacklistedCharEvents = {
-	HP = true,
-	Armor = true,
-}
-
 COMPONENTS.DataStore = {
 	_name = "base",
 	CreateStore = function(self, owner, key, data)
@@ -19,17 +14,13 @@ COMPONENTS.DataStore = {
 			SetData = function(self, var, data)
 				_stores[self.Owner][self.Key][var] = data
 
-				if self.Key == "Character" and IsDuplicityVersion() and not _blacklistedCharEvents[var] then
+				if self.Key == "Character" and IsDuplicityVersion() then
 					TriggerClientEvent("Characters:Client:SetData", _stores[self.Owner][self.Key]["Source"], var, data)
 				end
 			end,
 			GetData = function(self, var)
 				if var ~= nil and var ~= "" then
-					if
-						_stores[self.Owner]
-						and _stores[self.Owner][self.Key]
-						and _stores[self.Owner][self.Key][var] ~= nil
-					then
+					if _stores[self.Owner][self.Key][var] ~= nil then
 						return _stores[self.Owner][self.Key][var]
 					else
 						return nil
@@ -44,8 +35,7 @@ COMPONENTS.DataStore = {
 		}
 	end,
 	DeleteStore = function(self, owner, key)
-		if _stores[owner] then
-			_stores[owner][key] = nil
-		end
+		_stores[owner][key] = nil
+		collectgarbage()
 	end,
 }

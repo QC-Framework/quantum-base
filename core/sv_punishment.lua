@@ -41,7 +41,7 @@ COMPONENTS.Punishment = {
 
 		return Citizen.Await(p)
 	end,
-	Kick = function(self, source, reason, issuer, afk)
+	Kick = function(self, source, reason, issuer)
 		local tPlayer = COMPONENTS.Fetch:Source(source)
 
 		if not tPlayer then
@@ -73,6 +73,8 @@ COMPONENTS.Punishment = {
 				}
 			end
 
+			COMPONENTS.Punishment.Actions:Kick(source, reason, iPlayer:GetData("Name"))
+
 			COMPONENTS.Logger:Info(
 				"Punishment",
 				string.format(
@@ -91,8 +93,7 @@ COMPONENTS.Punishment = {
 					issuer = string.format("%s [%s]", iPlayer:GetData("Name"), iPlayer:GetData("AccountID")),
 				}
 			)
-			
-			COMPONENTS.Punishment.Actions:Kick(source, reason, iPlayer:GetData("Name"))
+
 			return {
 				success = true,
 				Name = tPlayer:GetData("Name"),
@@ -100,32 +101,31 @@ COMPONENTS.Punishment = {
 				reason = reason,
 			}
 		else
-			if not afk then
-				COMPONENTS.Logger:Info(
-					"Punishment",
-					string.format(
-						"%s [%s] Kicked By %s For %s",
-						tPlayer:GetData("Name"),
-						tPlayer:GetData("AccountID"),
-						issuer,
-						reason
-					),
-					{
-						console = true,
-						file = true,
-						database = true,
-						discord = { embed = true, type = "inform", webhook = GetConvar("discord_pwnzor_webhook", "") },
-					},
-					{
-						account = tPlayer:GetData("AccountID"),
-						identifier = tPlayer:GetData("Identifier"),
-						reason = reason,
-						issuer = issuer,
-					}
-				)
-			end
 			COMPONENTS.Punishment.Actions:Kick(source, reason, issuer)
-			
+
+			COMPONENTS.Logger:Info(
+				"Punishment",
+				string.format(
+					"%s [%s] Kicked By %s For %s",
+					tPlayer:GetData("Name"),
+					tPlayer:GetData("AccountID"),
+					issuer,
+					reason
+				),
+				{
+					console = true,
+					file = true,
+					database = true,
+					discord = { embed = true, type = "inform", webhook = GetConvar("discord_pwnzor_webhook", "") },
+				},
+				{
+					account = tPlayer:GetData("AccountID"),
+					identifier = tPlayer:GetData("Identifier"),
+					reason = reason,
+					issuer = issuer,
+				}
+			)
+
 			return {
 				success = true,
 				Name = tPlayer:GetData("Name"),
@@ -579,7 +579,7 @@ COMPONENTS.Punishment.Ban = {
 					expires,
 					expStr,
 					issuer,
-					iPlayer:GetData("AccountID"),
+					iPlayer:GetData("ID"),
 					false
 				)
 			then
@@ -742,6 +742,20 @@ COMPONENTS.Punishment.Actions = {
 				)
 			end
 
+			local data = COMPONENTS.WebAPI:Request("POST", "admin/ban", {
+				account = tAccount,
+				identifier = tIdentifier,
+				duration = expires,
+				issuer = issuerId,
+			}, {})
+			if data.code ~= 200 then
+				COMPONENTS.Logger:Info(
+					"Punishment",
+					("Failed To Ban Account %s On Website"):format(tAccount),
+					{ console = true, discord = { embed = true, type = "error" } }
+				)
+			end
+
 			if mask then
 				reason = "💙 From Pwnzor 🙂"
 			end
@@ -751,7 +765,7 @@ COMPONENTS.Punishment.Actions = {
 					DropPlayer(
 						tSource,
 						string.format(
-							"You're Banned, Appeal in Discord\n\nReason: %s\nExpires: %s\nID: %s",
+							"You're Banned, Appeal At https://quantumrp.com/\n\nReason: %s\nExpires: %s\nID: %s",
 							reason,
 							expStr,
 							results._id
@@ -761,7 +775,7 @@ COMPONENTS.Punishment.Actions = {
 					DropPlayer(
 						tSource,
 						string.format(
-							"You're Permanently Banned, Appeal in Discord\n\nReason: %s\nID: %s",
+							"You're Permanently Banned, Appeal At https://quantumrp.com/\n\nReason: %s\nID: %s",
 							reason,
 							results._id
 						)
@@ -782,6 +796,21 @@ COMPONENTS.Punishment.Actions = {
 					["$set"] = { active = false, unbanned = { issuer = issuer:GetData("Name"), date = os.time() } },
 				},
 			})
+
+			local data = COMPONENTS.WebAPI:Request("DELETE", "admin/ban", {
+				type = v.account ~= nil and "account" or "identifier",
+				account = v.account,
+				identifier = v.identifier,
+				issuer = issuer:GetData("AccountID"),
+			}, {})
+			if data.code ~= 200 then
+				success = false
+				COMPONENTS.Logger:Info(
+					"Punishment",
+					("Failed To Revoke Site Ban For Account: %s & Identifier: %s"):format(v.account, v.identifier),
+					{ console = true, discord = { embed = true, type = "error" } }
+				)
+			end
 
 			table.insert(_ids, v._id)
 		end

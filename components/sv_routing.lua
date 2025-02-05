@@ -17,7 +17,7 @@ COMPONENTS.Routing = {
     AddPlayerToRoute = function(self, source, route, force)
         local playerState = Player(source).state
         if playerState["currentRoute"] == route and not force then
-            COMPONENTS.Logger:Trace("Routing", tostring(source) .. " is already routed to " .. tostring(route))
+            COMPONENTS.Logger:Error("Routing", tostring(source) .. " is already routed to " .. tostring(route))
             return
         end
         local currentRoute = GetPlayerRoutingBucket(source)
@@ -29,8 +29,8 @@ COMPONENTS.Routing = {
 
         local ped = GetPlayerPed(source)
         if ped then
-            for k, v in ipairs(GetAllObjects()) do
-                if DoesEntityExist(v) and GetEntityAttachedTo(v) == ped then
+            for _, v in ipairs(GetAllObjects()) do
+                if GetEntityAttachedTo(v) == ped then
                     SetEntityRoutingBucket(v, route)
                 end
             end

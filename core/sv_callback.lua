@@ -9,11 +9,11 @@ COMPONENTS.Callbacks = {
     end,
     DoServerCallback = function(self, source, event, data, extraId)
         if _sCallbacks[event] ~= nil then
-            -- CreateThread(function()
+            CreateThread(function()
                 _sCallbacks[event](source, data, function(...)
-                    TriggerLatentClientEvent('Callbacks:Client:ReceiveCallback', source, 50000, event, extraId, ...)
+                    TriggerClientEvent('Callbacks:Client:ReceiveCallback', source, event, extraId, ...)
                 end)
-            -- end)
+            end)
         end
     end,
     ClientCallback = function(self, source, event, data, cb, extraId)
@@ -28,7 +28,7 @@ COMPONENTS.Callbacks = {
 
         _cCallbacks[source] = _cCallbacks[source] or {}
         _cCallbacks[source][id] = cb
-        TriggerLatentClientEvent('Callbacks:Client:TriggerEvent', source, 50000, event, data, extraId)
+        TriggerClientEvent('Callbacks:Client:TriggerEvent', source, event, data, extraId)
     end
 }
 

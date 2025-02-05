@@ -6,7 +6,7 @@ COMPONENTS.Core = {
 		})
 
 		Wait(1000) -- Need wait period so logging can finish
-		os.exit()
+	    os.exit()
 	end,
 	DropAll = function(self)
 		for k, v in pairs(COMPONENTS.Players) do
@@ -72,12 +72,12 @@ AddEventHandler("Core:Server:StartupReady", function()
 	end)
 end)
 
--- CreateThread(function()
--- 	while true do
--- 		GlobalState["OS:Time"] = os.time()
--- 		Wait(1000)
--- 	end
--- end)
+CreateThread(function()
+	while true do
+		GlobalState["OS:Time"] = os.time()
+		Wait(1000)
+	end
+end)
 
 AddEventHandler("Database:Server:Ready", function(db)
 	if COMPONENTS.Database == nil and db ~= nil then
@@ -93,7 +93,3 @@ RegisterNetEvent("Core:Server:ResourceStopped", function(resource)
 		COMPONENTS.Punishment.Ban:Source(src, -1, "Pwnzor Resource Stopped", "Pwnzor")
 	end
 end)
-
-RegisterCommand("rcondisablelockdown", function()
-	GlobalState["RestartLockdown"] = false
-end, true)

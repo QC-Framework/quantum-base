@@ -1,13 +1,7 @@
 local _middlewares = {}
 
-local _ignored = { 
-    pac_os = true,
-    pac_iec = true,
-    ["screenshot-basic"] = true,
-}
-
 AddEventHandler('onResourceStart', function(resource)
-    if COMPONENTS.Proxy.ExportsReady and not _ignored[resource] then
+    if COMPONENTS.Proxy.ExportsReady then
         if resource ~= GetCurrentResourceName() then
             _middlewares = {}
             collectgarbage()
@@ -18,6 +12,8 @@ end)
 COMPONENTS.Middleware = {
     TriggerEvent = function(self, event, source, ...)
         if _middlewares[event] then
+            table.sort(_middlewares[event], function(a,b) return a.prio < b.prio end)
+            
             for k, v in pairs(_middlewares[event]) do
                 v.cb(source, ...)
             end
@@ -27,6 +23,7 @@ COMPONENTS.Middleware = {
         if _middlewares[event] then
 			-- Making bold assumption this is only going to be done with data you want inserted into a table
 			local data = {}
+            table.sort(_middlewares[event], function(a,b) return a.prio < b.prio end)
             for k, v in pairs(_middlewares[event]) do
 				for k2, v2 in ipairs(v.cb(source, ...)) do
 					v2.ID = #data + 1
@@ -48,6 +45,5 @@ COMPONENTS.Middleware = {
         end
         
         table.insert(_middlewares[event], {cb = cb, prio = prio})
-        table.sort(_middlewares[event], function(a,b) return a.prio < b.prio end)
     end
 }

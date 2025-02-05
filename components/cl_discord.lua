@@ -2,11 +2,11 @@ COMPONENTS.Discord = {
 	_name = "base",
 	RichPresence = function(self)
 		SetDiscordAppId(COMPONENTS.Convar.DISCORD_APP.value)
-		SetDiscordRichPresenceAsset("QuantumRP_large_icon")
-		SetDiscordRichPresenceAssetText("Join Today: QuantumRP.gg")
+		SetDiscordRichPresenceAsset("logo2")
+		SetDiscordRichPresenceAssetText("Join Today: quantumRP.com")
 		--SetDiscordRichPresenceAssetSmall("info")
-		SetDiscordRichPresenceAction(0, "Apply Now", "https://QuantumRP.gg")
-		SetDiscordRichPresenceAction(1, "Join Our Discord", "https://discord.gg/QuantumRPgg")
+		SetDiscordRichPresenceAction(0, "Register at quantumRP.net", "https://quantumrp.com")
+		SetDiscordRichPresenceAction(1, "Join Our Discord", "https://discord.gg/quantumrp")
 
 		CreateThread(function()
 			while true do
@@ -16,22 +16,16 @@ COMPONENTS.Discord = {
 				if char ~= nil then
 					SetRichPresence(
 						string.format(
-							"[%d/%d]%s - Playing %s %s",
+							"%d/%d Players - Playing %s %s",
 							playerCount,
 							GlobalState.MaxPlayers,
-							queueCount > 0 and string.format(" (Queue: %d)", queueCount) or "",
 							char:GetData("First"),
 							char:GetData("Last")
 						)
 					)
 				else
 					SetRichPresence(
-						string.format(
-							"[%d/%d]%s - Selecting a Character", 
-							playerCount, 
-							GlobalState.MaxPlayers,
-							queueCount > 0 and string.format(" (Queue: %d)", queueCount) or ""
-						)
+						string.format("%d/%d Players - Selecting a Character", playerCount, GlobalState.MaxPlayers)
 					)
 				end
 

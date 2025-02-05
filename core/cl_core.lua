@@ -3,13 +3,96 @@ COMPONENTS.Core = {
 	_name = "base",
 }
 
+local function disableScenarios()
+	local scenarios = {
+		"WORLD_MOUNTAIN_LION_REST",
+		"WORLD_MOUNTAIN_LION_WANDER",
+		"DRIVE",
+		"WORLD_VEHICLE_POLICE_BIKE",
+		"WORLD_VEHICLE_POLICE_CAR",
+		"WORLD_VEHICLE_POLICE_NEXT_TO_CAR",
+		"WORLD_VEHICLE_DRIVE_SOLO",
+		"WORLD_VEHICLE_BIKER",
+		"WORLD_VEHICLE_DRIVE_PASSENGERS",
+		"WORLD_VEHICLE_SALTON_DIRT_BIKE",
+		"WORLD_VEHICLE_BICYCLE_MOUNTAIN",
+		"PROP_HUMAN_SEAT_CHAIR",
+		"WORLD_VEHICLE_ATTRACTOR",
+		"WORLD_HUMAN_LEANING",
+		"WORLD_HUMAN_HANG_OUT_STREET",
+		"WORLD_HUMAN_DRINKING",
+		"WORLD_HUMAN_SMOKING",
+		"WORLD_HUMAN_GUARD_STAND",
+		"WORLD_HUMAN_CLIPBOARD",
+		"WORLD_HUMAN_HIKER",
+		"WORLD_VEHICLE_EMPTY",
+		"WORLD_VEHICLE_BIKE_OFF_ROAD_RACE",
+		"WORLD_HUMAN_PAPARAZZI",
+		"WORLD_VEHICLE_PARK_PERPENDICULAR_NOSE_IN",
+		"WORLD_VEHICLE_PARK_PARALLEL",
+		"WORLD_VEHICLE_CONSTRUCTION_SOLO",
+		"WORLD_VEHICLE_CONSTRUCTION_PASSENGERS",
+		"WORLD_VEHICLE_TRUCK_LOGS",
+		"WORLD_VEHICLE_AMBULANCE",
+		"WORLD_VEHICLE_BICYCLE_BMX",
+		"WORLD_VEHICLE_BICYCLE_BMX_BALLAS",
+		"WORLD_VEHICLE_BICYCLE_BMX_FAMILY",
+		"WORLD_VEHICLE_BICYCLE_BMX_HARMONY",
+		"WORLD_VEHICLE_BICYCLE_BMX_VAGOS",
+		"WORLD_VEHICLE_BICYCLE_ROAD",
+		"WORLD_VEHICLE_BOAT_IDLE",
+		"WORLD_VEHICLE_BOAT_IDLE_ALAMO",
+		"WORLD_VEHICLE_BOAT_IDLE_MARQUIS",
+		"WORLD_VEHICLE_BROKEN_DOWN",
+		"WORLD_VEHICLE_BUSINESSMEN",
+		"WORLD_VEHICLE_HELI_LIFEGUARD",
+		"WORLD_VEHICLE_CLUCKIN_BELL_TRAILER",
+		"WORLD_VEHICLE_DRIVE_PASSENGERS_LIMITED",
+		"WORLD_VEHICLE_FARM_WORKER",
+		"WORLD_VEHICLE_FIRE_TRUCK",
+		"WORLD_VEHICLE_MARIACHI",
+		"WORLD_VEHICLE_MECHANIC",
+		"WORLD_VEHICLE_MILITARY_PLANES_BIG",
+		"WORLD_VEHICLE_MILITARY_PLANES_SMALL",
+		"WORLD_VEHICLE_PASSENGER_EXIT",
+		"WORLD_VEHICLE_POLICE",
+		"WORLD_VEHICLE_QUARRY",
+		"WORLD_VEHICLE_SALTON",
+		"WORLD_VEHICLE_SECURITY_CAR",
+		"WORLD_VEHICLE_STREETRACE",
+		"WORLD_VEHICLE_TOURBUS",
+		"WORLD_VEHICLE_TOURIST",
+		"WORLD_VEHICLE_TANDL",
+		"WORLD_VEHICLE_TRACTOR",
+		"WORLD_VEHICLE_TRACTOR_BEACH",
+		"WORLD_VEHICLE_TRUCKS_TRAILERS",
+		"WORLD_VEHICLE_DISTANT_EMPTY_GROUND",
+	}
+
+	for i = 1, #scenarios do
+		SetScenarioTypeEnabled(scenarios[i], false)
+	end
+
+	SetMaxWantedLevel(0)
+	SetCreateRandomCopsNotOnScenarios(false)
+	SetCreateRandomCops(false)
+	SetCreateRandomCopsOnScenarios(false)
+end
+
+local function disableDispatch()
+	for i = 1, 32 do
+		EnableDispatchService(i, false)
+	end
+end
+
 CreateThread(function()
-	LocalPlayer.state.PlayerID = PlayerId()
+	LocalPlayer.state:set('clientID', PlayerId())
+	LocalPlayer.state:set('serverID', GetPlayerServerId(PlayerId()))
 	StatSetInt(`MP0_STAMINA`, 25, true)
 
 	AddStateBagChangeHandler(
 		"isAdmin",
-		string.format("player:%s", GetPlayerServerId(LocalPlayer.state.PlayerID)),
+		string.format("player:%s", LocalPlayer.state.serverID),
 		function(bagName, key, value, _unused, replicated)
 			if value then
 				StatSetInt(`MP0_SHOOTING_ABILITY`, 100, true)
@@ -20,7 +103,7 @@ CreateThread(function()
 	)
 end)
 
-_baseThreading = false
+local _baseThreading = false
 function COMPONENTS.Core.Init(self)
 	if _baseThreading then
 		return
@@ -30,88 +113,22 @@ function COMPONENTS.Core.Init(self)
 	ShutdownLoadingScreenNui()
 	ShutdownLoadingScreen()
 
-	LocalPlayer.state.ped = PlayerPedId()
-	LocalPlayer.state.myPos = GetEntityCoords(LocalPlayer.state.ped)
-	LocalPlayer.state.inPauseMenu = IsPauseMenuActive()
+	LocalPlayer.state:set('ped', PlayerPedId())
+	LocalPlayer.state:set('position', GetEntityCoords(LocalPlayer.state.ped))
 
-	AddTextEntry("FE_THDR_GTAO", "~y~QuantumRP~m~")
-
-	SetScenarioTypeEnabled("WORLD_VEHICLE_STREETRACE", false)
-	SetScenarioTypeEnabled("WORLD_VEHICLE_SALTON_DIRT_BIKE", false)
-	SetScenarioTypeEnabled("WORLD_VEHICLE_SALTON", false)
-	SetScenarioTypeEnabled("WORLD_VEHICLE_POLICE_NEXT_TO_CAR", false)
-	SetScenarioTypeEnabled("WORLD_VEHICLE_POLICE_CAR", false)
-	SetScenarioTypeEnabled("WORLD_VEHICLE_POLICE_BIKE", false)
-	SetScenarioTypeEnabled("WORLD_VEHICLE_MILITARY_PLANES_SMALL", false)
-	SetScenarioTypeEnabled("WORLD_VEHICLE_MILITARY_PLANES_BIG", false)
-	SetScenarioTypeEnabled("WORLD_VEHICLE_MECHANIC", false)
-	SetScenarioTypeEnabled("WORLD_VEHICLE_EMPTY", false)
-	SetScenarioTypeEnabled("WORLD_VEHICLE_BUSINESSMEN", false)
-	SetScenarioTypeEnabled("WORLD_VEHICLE_BIKE_OFF_ROAD_RACE", false)
-	SetStaticEmitterEnabled("LOS_SANTOS_VANILLA_UNICORN_01_STAGE", false)
-	SetStaticEmitterEnabled("LOS_SANTOS_VANILLA_UNICORN_02_MAIN_ROOM", false)
-	SetStaticEmitterEnabled("LOS_SANTOS_VANILLA_UNICORN_03_BACK_ROOM", false)
-	SetStaticEmitterEnabled("collision_9qv4ecm", false) -- Tequila
-	SetAudioFlag("DisableFlightMusic", true) -- disable flight music yay
-	SetAudioFlag("PoliceScannerDisabled", true) -- disabled police scanners in vehicles
-
-	AddScenarioBlockingArea(-3966.93, -3934.72, 200, 1429.366, -224.4396, 2000, false, true, true, true) -- Disable aircraft spawns
-
-	local centerPoint = vector3(-1324.7, -800.07, 17.71) -- Disable banktruck_baycity
-	local radiusSize = 180.0
-	AddScenarioBlockingArea(centerPoint - radiusSize, centerPoint + radiusSize, false, true, true, true)
-	AddPopMultiplierArea(centerPoint - radiusSize, centerPoint + radiusSize, 0.0, 0.0, false)
-	SetPedNonCreationArea(centerPoint - radiusSize, centerPoint + radiusSize)
-
-	local centerPoint = vector3(-45.6, -762.92, 32.93) -- Disable banktruck_sanandreas
-	local radiusSize = 180.0
-	AddScenarioBlockingArea(centerPoint - radiusSize, centerPoint + radiusSize, false, true, true, true)
-	AddPopMultiplierArea(centerPoint - radiusSize, centerPoint + radiusSize, 0.0, 0.0, false)
-	SetPedNonCreationArea(centerPoint - radiusSize, centerPoint + radiusSize)
-
-	local centerPoint = vector3(-1191.12, -317.3, 37.86) -- Disable banktruck_boulevard_del_perro
-	local radiusSize = 180.0
-	AddScenarioBlockingArea(centerPoint - radiusSize, centerPoint + radiusSize, false, true, true, true)
-	AddPopMultiplierArea(centerPoint - radiusSize, centerPoint + radiusSize, 0.0, 0.0, false)
-	SetPedNonCreationArea(centerPoint - radiusSize, centerPoint + radiusSize)
-
-	local centerPoint = vector3(-1555.09, -266.69, 54.93) -- Disable deathrow peds
-	local radiusSize = 180.0
-	AddScenarioBlockingArea(centerPoint - radiusSize, centerPoint + radiusSize, false, true, true, true)
-	AddPopMultiplierArea(centerPoint - radiusSize, centerPoint + radiusSize, 0.0, 0.0, false)
-	SetPedNonCreationArea(centerPoint - radiusSize, centerPoint + radiusSize)
-
-	local centerPoint = vector3(558.14, -195.16, 50.44) -- Disable autoexotics peds
-	local radiusSize = 180.0
-	AddScenarioBlockingArea(centerPoint - radiusSize, centerPoint + radiusSize, false, true, true, true)
-	AddPopMultiplierArea(centerPoint - radiusSize, centerPoint + radiusSize, 0.0, 0.0, false)
-	SetPedNonCreationArea(centerPoint - radiusSize, centerPoint + radiusSize)
-
-	local centerPoint = vector3(-737.56, -1504.55, 5.01) -- Disable dreamworks peds
-	local radiusSize = 180.0
-	AddScenarioBlockingArea(centerPoint - radiusSize, centerPoint + radiusSize, false, true, true, true)
-	AddPopMultiplierArea(centerPoint - radiusSize, centerPoint + radiusSize, 0.0, 0.0, false)
-	SetPedNonCreationArea(centerPoint - radiusSize, centerPoint + radiusSize)
-
-	local centerPoint = vector3(-1148.49, -2863.15, 13.96) -- Disable Airport helipads
-	local radiusSize = 180.0
-	AddScenarioBlockingArea(centerPoint - radiusSize, centerPoint + radiusSize, false, true, true, true)
-	AddPopMultiplierArea(centerPoint - radiusSize, centerPoint + radiusSize, 0.0, 0.0, false)
-	SetPedNonCreationArea(centerPoint - radiusSize, centerPoint + radiusSize)
+	disableScenarios()
+	disableDispatch()
 
 	CreateThread(function()
 		while _baseThreading do
 			Wait(1000)
 			local ped = PlayerPedId()
 			if ped ~= LocalPlayer.state.ped then
-				LocalPlayer.state.ped = ped
+				LocalPlayer.state:set('ped', ped)
 				SetEntityProofs(LocalPlayer.state.ped, false, false, false, false, false, true, false, false)
 				SetPedDropsWeaponsWhenDead(LocalPlayer.state.ped, false)
 				SetPedAmmoToDrop(LocalPlayer.state.ped, 0)
-
-				if GetEntityMaxHealth(ped) ~= 200 then
-					SetEntityMaxHealth(ped, 200)
-				end
+				TriggerEvent("Weapons:Client:Attach")
 			end
 		end
 	end)
@@ -126,8 +143,7 @@ function COMPONENTS.Core.Init(self)
 	CreateThread(function()
 		while _baseThreading do
 			Wait(100)
-			LocalPlayer.state.myPos = GetEntityCoords(LocalPlayer.state.ped)
-			LocalPlayer.state.inPauseMenu = IsPauseMenuActive()
+			LocalPlayer.state:set('position', GetEntityCoords(LocalPlayer.state.ped))
 		end
 	end)
 
@@ -143,39 +159,10 @@ function COMPONENTS.Core.Init(self)
 	end)
 
 	CreateThread(function()
-		while _baseThreading do
-			SetRadarZoom(1200) -- 1200
+		SetRadarBigmapEnabled(false, false)
 
-			if not LocalPlayer.state.wepTest then
-				SetVehicleDensityMultiplierThisFrame(0.2)
-				SetPedDensityMultiplierThisFrame(0.8)
-				SetRandomVehicleDensityMultiplierThisFrame(0.2)
-				SetParkedVehicleDensityMultiplierThisFrame(0.5)
-				SetScenarioPedDensityMultiplierThisFrame(0.8, 0.8)
-			end
-			NetworkSetFriendlyFireOption(true)
+		Wait(5)
 
-			if IsPedInCover(LocalPlayer.state.ped, 0) and not IsPedAimingFromCover(LocalPlayer.state.ped) then
-				DisablePlayerFiring(LocalPlayer.state.ped, true)
-			end
-
-			-- should disable any vehicle rewards
-			DisablePlayerVehicleRewards(LocalPlayer.state.ped)
-
-			-- set lockrange to 2.0
-			SetPlayerLockonRangeOverride(LocalPlayer.state.PlayerID, 2.0)
-
-			-- should disable headshots
-			-- SetPedSuffersCriticalHits(PlayerPedId(), false)
-
-			-- disable distance cop sirens
-			DistantCopCarSirens(false)
-
-			Wait(1)
-		end
-	end)
-
-	CreateThread(function()
 		while _baseThreading do
 			SetRadarBigmapEnabled(false, false)
 			DisableControlAction(0, 14, true)
@@ -206,6 +193,16 @@ function COMPONENTS.Core.Init(self)
 			HideHudComponentThisFrame(20)
 			--DontTiltMinimapThisFrame()
 
+			SetVehicleDensityMultiplierThisFrame(0.3)
+			SetPedDensityMultiplierThisFrame(0.8)
+			SetRandomVehicleDensityMultiplierThisFrame(0.4)
+			SetParkedVehicleDensityMultiplierThisFrame(0.5)
+			SetScenarioPedDensityMultiplierThisFrame(0.8, 0.8)
+			NetworkSetFriendlyFireOption(true)
+
+			if IsPedInCover(LocalPlayer.state.ped, false) and not IsPedAimingFromCover(LocalPlayer.state.ped) then
+				DisablePlayerFiring(LocalPlayer.state.ped, true)
+			end
 			Wait(1)
 		end
 	end)
@@ -219,14 +216,9 @@ function COMPONENTS.Core.Init(self)
 	end)
 
 	CreateThread(function()
-		for i = 1, 25 do
-			EnableDispatchService(i, false)
-		end
-
 		while _baseThreading do
-			local ped = PlayerPedId()
+			local ped = LocalPlayer.state.ped
 			SetPedHelmet(ped, false)
-			SetPedConfigFlag(ped, 438, true)
 			if IsPedInAnyVehicle(ped, false) then
 				if GetPedInVehicleSeat(GetVehiclePedIsIn(ped, false), 0) == ped then
 					SetPedConfigFlag(ped, 184, true)
@@ -246,31 +238,18 @@ function COMPONENTS.Core.Init(self)
 	end)
 
 	CreateThread(function()
-		while _baseThreading do
-			Wait(500)
-			local ped = PlayerPedId()
-			if not IsPedInAnyVehicle(ped, false) then
-				if IsPedUsingActionMode(ped) then
-					SetPedUsingActionMode(ped, -1, -1, 1)
-				end
-			else
-				Wait(3000)
-			end
-		end
-	end)
-
-	CreateThread(function()
 		local resetcounter = 0
 		local jumpDisabled = false
 
 		while _baseThreading do
 			Wait(100)
-			if jumpDisabled and resetcounter > 0 and IsPedJumping(PlayerPedId()) then
-				SetPedToRagdoll(PlayerPedId(), 1000, 1000, 3, 0, 0, 0)
+			local ped = LocalPlayer.state.ped
+			if jumpDisabled and resetcounter > 0 and IsPedJumping(ped) then
+				SetPedToRagdoll(ped, 1000, 1000, 3, false, false, false)
 				resetcounter = 0
 			end
 
-			if not jumpDisabled and IsPedJumping(PlayerPedId()) then
+			if not jumpDisabled and IsPedJumping(ped) then
 				jumpDisabled = true
 				resetcounter = 10
 				Wait(1200)
@@ -289,24 +268,15 @@ function COMPONENTS.Core.Init(self)
 end
 
 CreateThread(function()
-	while not exports or exports[GetCurrentResourceName()] == nil do
-		Wait(1)
-	end
-
-	local ped = PlayerPedId()
-	FreezeEntityPosition(ped, true)
-	SetEntityVisible(ped, false)
-	SetPlayerVisibleLocally(ped, false)
-
-	DoScreenFadeOut(500)
-	while IsScreenFadingOut() do
+	local resourceName = GetCurrentResourceName()
+	while not exports or exports[resourceName] == nil do
 		Wait(1)
 	end
 
 	COMPONENTS.Core:Init()
 
 	TriggerEvent("Proxy:Shared:RegisterReady")
-	for k, v in pairs(COMPONENTS) do
+	for k, _ in pairs(COMPONENTS) do
 		TriggerEvent("Proxy:Shared:ExtendReady", k)
 	end
 

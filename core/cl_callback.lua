@@ -14,7 +14,7 @@ COMPONENTS.Callbacks = {
 
         data = data or {}
         _sCallbacks[id] = cb
-        TriggerLatentServerEvent('Callbacks:Server:TriggerEvent', 50000, event, data, extraId)
+        TriggerServerEvent('Callbacks:Server:TriggerEvent', event, data, extraId)
     end,
     RegisterClientCallback = function(self, event, cb)
         _cCallbacks[event] = cb
@@ -23,7 +23,7 @@ COMPONENTS.Callbacks = {
         if _cCallbacks[event] ~= nil then
             CreateThread(function()
                 _cCallbacks[event](data, function(...)
-                    TriggerLatentServerEvent('Callbacks:Server:ReceiveCallback', 50000, event, extraId, ...)
+                    TriggerServerEvent('Callbacks:Server:ReceiveCallback', event, extraId, ...)
                 end)
             end)
         end

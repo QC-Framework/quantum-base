@@ -1,4 +1,4 @@
-const { faker } = require('@faker-js/faker');
+const faker = require('faker');
 
 const GENERATOR = {
 	_protected: true,
@@ -156,20 +156,6 @@ const GENERATOR = {
 		},
 		ingVerb: (t) => {
 			return faker.hacker.ingverb();
-		},
-	},
-	Word: {
-		adjective: (t) => {
-			return faker.word.adjective();
-		},
-		adverb: (t) => {
-			return faker.word.adverb();
-		},
-		noun: (t) => {
-			return faker.word.noun();
-		},
-		verb: (t) => {
-			return faker.word.verb();
 		},
 	},
 };

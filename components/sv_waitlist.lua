@@ -1,18 +1,6 @@
 local _queues = {}
 local started = false
 
-AddEventHandler("Characters:Server:PlayerLoggedOut", function(source, cData)
-	for k, v in pairs(_queues) do
-		COMPONENTS.WaitList.Interact:Remove(k, source)
-	end
-end)
-
-AddEventHandler("Characters:Server:PlayerDropped", function(source)
-	for k, v in pairs(_queues) do
-		COMPONENTS.WaitList.Interact:Remove(k, source)
-	end
-end)
-
 AddEventHandler("Proxy:Shared:RegisterReady", function()
 	if not started then
 		started = true
@@ -20,6 +8,18 @@ AddEventHandler("Proxy:Shared:RegisterReady", function()
 			CreateQueue(id)
 		end
 	end
+
+	COMPONENTS.Middleware:Add("Characters:Logout", function(source)
+		for k, v in pairs(_queues) do
+			COMPONENTS.WaitList.Interact:Remove(k, source)
+		end
+	end)
+
+	COMPONENTS.Middleware:Add("playerDropped", function(source)
+		for k, v in pairs(_queues) do
+			COMPONENTS.WaitList.Interact:Remove(k, source)
+		end
+	end)
 end)
 
 local _reqOpts = {
@@ -130,18 +130,23 @@ COMPONENTS.WaitList = {
 	PrintQueue = function(self, id)
 		if _queues[id] ~= nil then
 			for k, v in ipairs(_queues[id].queue) do
-				local char = COMPONENTS.Fetch:CharacterSource(v.source)
-				if char ~= nil then
-					print(
-						string.format(
-							"Waitlist %s #%s, %s %s (%s)",
-							id,
-							k,
-							char:GetData("First"),
-							char:GetData("Last"),
-							char:GetData("SID")
+				local plyr = COMPONENTS.Fetch:Source(v.source)
+				if plyr ~= nil then
+					local char = plyr:GetData("Character")
+					if char ~= nil then
+						print(
+							string.format(
+								"Waitlist %s #%s, %s %s (%s)",
+								id,
+								k,
+								char:GetData("First"),
+								char:GetData("Last"),
+								char:GetData("SID")
+							)
 						)
-					)
+					else
+						print(string.format("Player %s has nil character in waitlist: %s", plyr:GetData("Name"), id))
+					end
 				else
 					print(string.format("nil player in waitlist: %s", id))
 				end
@@ -173,13 +178,13 @@ COMPONENTS.WaitList = {
 	Pause = function(self, id)
 		if _queues[id] ~= nil then
 			COMPONENTS.Logger:Info("WaitList", string.format("^2%s^7 WaitList Process Paused", id))
-			queues[id].paused = true
+			_queues[id].paused = true
 		end
 	end,
 	Unpause = function(self, id)
 		if _queues[id] ~= nil then
 			COMPONENTS.Logger:Info("WaitList", string.format("^2%s^7 WaitList Process Unpaused", id))
-			queues[id].paused = false
+			_queues[id].paused = false
 		end
 	end,
 	Interact = {

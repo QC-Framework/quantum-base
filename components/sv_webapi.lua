@@ -3,23 +3,23 @@ local function _b64enc(data)
 	local b = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 	return (
-		(data:gsub(".", function(x)
-			local r, b = "", x:byte()
-			for i = 8, 1, -1 do
-				r = r .. (b % 2 ^ i - b % 2 ^ (i - 1) > 0 and "1" or "0")
-			end
-			return r
-		end) .. "0000"):gsub("%d%d%d?%d?%d?%d?", function(x)
-			if #x < 6 then
-				return ""
-			end
-			local c = 0
-			for i = 1, 6 do
-				c = c + (x:sub(i, i) == "1" and 2 ^ (6 - i) or 0)
-			end
-			return b:sub(c + 1, c + 1)
-		end) .. ({ "", "==", "=" })[#data % 3 + 1]
-	)
+			(data:gsub(".", function(x)
+				local r, b = "", x:byte()
+				for i = 8, 1, -1 do
+					r = r .. (b % 2 ^ i - b % 2 ^ (i - 1) > 0 and "1" or "0")
+				end
+				return r
+			end) .. "0000"):gsub("%d%d%d?%d?%d?%d?", function(x)
+				if #x < 6 then
+					return ""
+				end
+				local c = 0
+				for i = 1, 6 do
+					c = c + (x:sub(i, i) == "1" and 2 ^ (6 - i) or 0)
+				end
+				return b:sub(c + 1, c + 1)
+			end) .. ({ "", "==", "=" })[#data % 3 + 1]
+		)
 end
 
 COMPONENTS.WebAPI = {
@@ -29,6 +29,10 @@ COMPONENTS.WebAPI = {
 	Request = function(self, method, endpoint, params, jsondata)
 		COMPONENTS.Logger:Trace("WebAPI", "Endpoint Called: " .. method .. " - " .. endpoint)
 
+		local rData = nil
+
+		-- idfk, im too tired and fucking done with all this bullshit to try to think of a better way to do this retarded fucking bullshit.
+		-- Fuck everyone
 		local first = true
 		if params ~= nil then
 			for k, v in pairs(params) do
@@ -41,8 +45,6 @@ COMPONENTS.WebAPI = {
 			end
 		end
 
-		local p = promise.new()
-
 		PerformHttpRequest(
 			COMPONENTS.Convar.API_ADDRESS.value .. endpoint,
 			function(errorCode, resultData, resultHeaders)
@@ -52,101 +54,121 @@ COMPONENTS.WebAPI = {
 					headers = resultHeaders,
 				}
 
-				-- if data.code ~= nil and data.code ~= 200 then
-				-- 	COMPONENTS.Logger:Error("WebAPI", "Error: " .. data.code, { console = true })
-				-- end
+				if data.code ~= nil and data.code ~= 200 then
+					COMPONENTS.Logger:Error("WebAPI", "Error: " .. data.code, { console = true })
+				end
 
 				if data.data ~= nil then
 					data.data = json.decode(data.data)
 				end
 
-				p:resolve(data)
+				rData = data
 			end,
 			method,
 			#jsondata > 0 and json.encode(jsondata) or "",
 			{
 				["Content-Type"] = "application/json",
-				["Authorization"] = "Basic " .. _b64enc(
-					string.format("%s:%s", COMPONENTS.Convar.API_ID.value, COMPONENTS.Convar.API_SECRET.value)
-				),
+				["Authorization"] = "Basic " .. _b64enc(COMPONENTS.Convar.API_TOKEN.value),
 			}
 		)
 
-		return Citizen.Await(p)
+		while rData == nil do
+			Wait(0)
+		end
+
+		return rData
 	end,
-	-- Validate = function(self)
-	-- 	COMPONENTS.Logger:Trace("Core", "Validating API Key With Authentication Services", {
-	-- 		console = true,
-	-- 	})
+	Validate = function(self)
+		COMPONENTS.Logger:Trace("Core", "Validating API Key With Authentication Services", {
+			console = true,
+		})
 
-	-- 	local res = COMPONENTS.WebAPI:Request("GET", "admin/startup", nil, {})
+		local res = COMPONENTS.WebAPI:Request("GET", "admin/startup", nil, {})
 
-	-- 	if res.code ~= 200 then
-	-- 		COMPONENTS.Logger:Critical("Core", "Failed Validation, Shutting Down Server", {
-	-- 			console = true,
-	-- 			file = true,
-	-- 		})
-	-- 		COMPONENTS.Core:Shutdown("Failed Validation, Shutting Down Server")
+		if res.code ~= 200 then
+			COMPONENTS.Logger:Critical("Core", "Failed Validation, Shutting Down Server", {
+				console = true,
+				file = true,
+			})
+			COMPONENTS.Core:Shutdown("Failed Validation, Shutting Down Server")
 
-	-- 		return false
-	-- 	else
-	-- 		COMPONENTS.Config.Server = {
-	-- 			ID = res.data.id,
-	-- 			Name = res.data.name,
-	-- 			Access = res.data.restricted,
-	-- 			Channel = res.data.channel,
-	-- 			Region = res.data.region,
-	-- 		}
-	-- 		COMPONENTS.Config.Game = {
-	-- 			ID = res.data.game.id,
-	-- 			Name = res.data.game.name,
-	-- 			Short = res.data.game.short,
-	-- 		}
+			return false
+		else
+			COMPONENTS.Config.Server = {
+				ID = res.data.id,
+				Name = res.data.name,
+				Access = res.data.restricted,
+				Channel = res.data.channel,
+				Region = res.data.region,
+			}
+			COMPONENTS.Config.Game = {
+				ID = res.data.game.id,
+				Name = res.data.game.name,
+				Short = res.data.game.short,
+			}
 
-	-- 		COMPONENTS.Config.Groups = res.data.groups
+			COMPONENTS.Config.Groups = res.data.groups
 
-	-- 		GlobalState.IsProduction = res.data.channel:upper() ~= "DEV"
-	-- 		if COMPONENTS.Config.Server.Access then
-	-- 			COMPONENTS.Logger:Trace(
-	-- 				"Core",
-	-- 				string.format(
-	-- 					"Server ^2#%s^7 - ^2%s^7 Authenticated, Running With Access Restrictions",
-	-- 					tostring(COMPONENTS.Config.Server.ID),
-	-- 					COMPONENTS.Config.Server.Name
-	-- 				),
-	-- 				{ console = true }
-	-- 			)
-	-- 		else
-	-- 			COMPONENTS.Logger:Info(
-	-- 				"Core",
-	-- 				string.format(
-	-- 					"Server ^2#%s^7 - ^2%s^7 Authenticated, Running With No Access Restriction",
-	-- 					tostring(COMPONENTS.Config.Server.ID),
-	-- 					COMPONENTS.Config.Server.Name
-	-- 				),
-	-- 				{ console = true }
-	-- 			)
-	-- 		end
+			GlobalState.IsProduction = res.data.channel:upper() ~= "DEV"
+			if COMPONENTS.Config.Server.Access then
+				COMPONENTS.Logger:Trace(
+					"Core",
+					string.format(
+						"Server ^2#%s^7 - ^2%s^7 Authenticated, Running With Access Restrictions",
+						tostring(COMPONENTS.Config.Server.ID),
+						COMPONENTS.Config.Server.Name
+					),
+					{ console = true }
+				)
+			else
+				COMPONENTS.Logger:Info(
+					"Core",
+					string.format(
+						"Server ^2#%s^7 - ^2%s^7 Authenticated, Running With No Access Restriction",
+						tostring(COMPONENTS.Config.Server.ID),
+						COMPONENTS.Config.Server.Name
+					),
+					{ console = true }
+				)
+			end
 
-	-- 		COMPONENTS.Logger:Trace("WebAPI", "Loaded ^5" .. tostring(res.data.count) .. "^7 Group Configurations")
+			COMPONENTS.Logger:Trace("WebAPI", "Loaded ^5" .. tostring(res.data.count) .. "^7 Group Configurations")
 
-	-- 		return true
-	-- 	end
-	-- end,
+			return true
+		end
+	end,
 }
 
 COMPONENTS.WebAPI.GetMember = {
-	Identifier = function(self, identifier)
-		if identifier ~= nil then
-			local data = COMPONENTS.WebAPI:Request("GET", "serverAPI/user/identifier", {
-				license = identifier,
+	AccountID = function(self, aid)
+		if aid ~= nil then
+			local data = COMPONENTS.WebAPI:Request("GET", "member/account", {
+				aid = aid,
 			}, {})
 
-			if data.code == 200 then
+			if data.code == 401 then
+				return -1
+			else
 				return data.data
 			end
+		else
+			return nil
 		end
-		return nil
+	end,
+	Identifier = function(self, identifier)
+		if identifier ~= nil then
+			local data = COMPONENTS.WebAPI:Request("GET", "member/identifier", {
+				identifier = identifier,
+			}, {})
+
+			if data.code == 401 then
+				return -1
+			else
+				return data.data
+			end
+		else
+			return nil
+		end
 	end,
 }
 
@@ -160,7 +182,7 @@ function SetupAPIHandler()
 		handlerSetup = true
 
 		SetHttpHandler(function(req, res)
-			if req.path == "/data" then
+			if req.path == '/data' then
 				local data = {
 					Restart = pendingRestartTime,
 					Uptime = GetGameTimer(),
@@ -169,7 +191,7 @@ function SetupAPIHandler()
 				}
 
 				if COMPONENTS.Queue then
-					data.Queue = COMPONENTS.Queue.Queue:GetCount()
+					data.Queue = COMPONENTS.Queue:GetTotal()
 				end
 
 				res.send(json.encode(data))

@@ -12,6 +12,65 @@ const DATABASE = {
 	_required: ['Game', 'Auth'],
 	//_required: [ 'isConnected', 'insert', 'insertOne', 'find', 'findOne', 'update', 'updateOne', 'delete', 'deleteOne', 'count' ],
 	_name: 'base',
+	/* THESE METHODS SHOULD BE CONSIDERED DEPRECATED. THEY WILL BE REMOVED BEFORE ANY PRODUCTION RELEASE */
+	/* They're being left here to just ensure no issues, but any development going forward need to use specific Auth / Game Dbs */
+	isConnected: () => {
+		return !!Methods.isConnected(gameDb);
+	},
+	insert: (t, params, callback) => {
+		Log('^9DEPRECATED DATABSE METHOD USED, UPDATE ASAP^7', {
+			console: true,
+		});
+		return Methods.insert(gameDb, params, callback);
+	},
+	insertOne: (t, params, callback) => {
+		Log('^9DEPRECATED DATABSE METHOD USED, UPDATE ASAP^7', {
+			console: true,
+		});
+		return Methods.insertOne(gameDb, params, callback);
+	},
+	find: (t, params, callback) => {
+		Log('^9DEPRECATED DATABSE METHOD USED, UPDATE ASAP^7', {
+			console: true,
+		});
+		return Methods.find(gameDb, params, callback);
+	},
+	findOne: (t, params, callback) => {
+		Log('^9DEPRECATED DATABSE METHOD USED, UPDATE ASAP^7', {
+			console: true,
+		});
+		return Methods.findOne(gameDb, params, callback);
+	},
+	update: (t, params, callback, isUpdateOne) => {
+		Log('^9DEPRECATED DATABSE METHOD USED, UPDATE ASAP^7', {
+			console: true,
+		});
+		return Methods.update(gameDb, params, callback, isUpdateOne);
+	},
+	updateOne: (t, params, callback) => {
+		Log('^9DEPRECATED DATABSE METHOD USED, UPDATE ASAP^7', {
+			console: true,
+		});
+		return Methods.updateOne(gameDb, params, callback);
+	},
+	delete: (t, params, callback, isDeleteOne) => {
+		Log('^9DEPRECATED DATABSE METHOD USED, UPDATE ASAP^7', {
+			console: true,
+		});
+		return Methods.delete(gameDb, params, callback, isDeleteOne);
+	},
+	deleteOne: (t, params, callback) => {
+		Log('^9DEPRECATED DATABSE METHOD USED, UPDATE ASAP^7', {
+			console: true,
+		});
+		return Methods.deleteOne(gameDb, params, callback);
+	},
+	count: (t, params, callback) => {
+		Log('^9DEPRECATED DATABSE METHOD USED, UPDATE ASAP^7', {
+			console: true,
+		});
+		return Methods.count(gameDb, params, callback);
+	},
 	Game: {
 		isConnected: () => {
 			return !!Methods.isConnected(gameDb);
@@ -46,8 +105,8 @@ const DATABASE = {
 		count: (t, params, callback) => {
 			return Methods.count(gameDb, params, callback);
 		},
-		aggregate: (t, params, callback, stupidFlag) => {
-			return Methods.aggregate(gameDb, params, callback, stupidFlag);
+		aggregate: (t, params, callback) => {
+			return Methods.aggregate(gameDb, params, callback);
 		},
 	},
 	Auth: {
@@ -236,6 +295,7 @@ const Methods = {
 				arrayOfIds,
 			);
 		});
+		process._tickCallback();
 	},
 	insertOne: (db, params, callback) => {
 		if (checkParams(params)) {
@@ -269,6 +329,7 @@ const Methods = {
 				utils.exportDocuments(documents),
 			);
 		});
+		process._tickCallback();
 	},
 	findOne: (db, params, callback) => {
 		if (checkParams(params)) params.limit = 1;
@@ -297,6 +358,7 @@ const Methods = {
 		isUpdateOne
 			? collection.updateOne(query, update, options, cb)
 			: collection.updateMany(query, update, options, cb);
+		process._tickCallback();
 	},
 	updateOne: (db, params, callback) => {
 		return Methods.update(db, params, callback, true);
@@ -323,6 +385,7 @@ const Methods = {
 		isDeleteOne
 			? collection.deleteOne(query, options, cb)
 			: collection.deleteMany(query, options, cb);
+		process._tickCallback();
 	},
 	deleteOne: (db, params, callback) => {
 		return Methods.delete(db, params, callback, true);
@@ -346,6 +409,7 @@ const Methods = {
 			}
 			utils.safeCallback(callback, true, count);
 		});
+		process._tickCallback();
 	},
 	findOneAndUpdate: (db, params, callback) => {
 		if (!checkDatabaseReady()) return;
@@ -373,9 +437,10 @@ const Methods = {
 		};
 
 		collection.findOneAndUpdate(query, update, options, cb);
+		process._tickCallback();
 	},
 
-	aggregate: (db, params, callback, stupidFlag) => {
+	aggregate: (db, params, callback) => {
 		if (!checkDatabaseReady()) return;
 		if (!checkParams(params))
 			return Log(`aggregate: Invalid params object.`);
@@ -392,15 +457,12 @@ const Methods = {
 				utils.safeCallback(callback, false, err.message);
 				return;
 			}
-
-			if (stupidFlag && documents?.[0]?.data) {
-				documents[0].data = utils.exportDocuments(documents[0].data);
-			}
 			utils.safeCallback(
 				callback,
 				true,
 				utils.exportDocuments(documents),
 			);
 		});
+		process._tickCallback();
 	},
 };
